@@ -5,6 +5,7 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+
 android {
     namespace = "com.example.todo"
     compileSdk = flutter.compileSdkVersion
@@ -28,6 +29,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        minSdk 23
     }
 
     buildTypes {

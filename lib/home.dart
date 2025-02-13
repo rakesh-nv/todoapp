@@ -12,12 +12,13 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  //text controller
+  final _controller = TextEditingController();
   final _myBox = Hive.box('mybox');
   ToDoDataBase db = ToDoDataBase();
 
   @override
   void initState() {
-    // TODO: implement initState
     // if this is the firest time ever opening the app default data
     if(_myBox.get("TODOLIST")==null){
       db.createInitialData();
@@ -28,8 +29,6 @@ class _HomeState extends State<Home> {
     super.initState();
   }
 
-  //text controller
-  final _controller = TextEditingController();
 
   // check box changed
   void checkBoxChanged(bool? value, int index) {
@@ -82,7 +81,7 @@ class _HomeState extends State<Home> {
         onPressed: () {
           createNewTask();
         },
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
       body: ListView.builder(
         itemBuilder: (context, index) {
