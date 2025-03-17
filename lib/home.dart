@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
-import 'package:todo/data/database.dart';
+import 'package:provider/provider.dart';
+import 'package:todo/provider/home_provider.dart';
 import 'package:todo/util/dialogbox.dart';
 import 'package:todo/util/todo_tile.dart';
 
@@ -12,61 +12,29 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  //text controller
-  final _controller = TextEditingController();
-  final _myBox = Hive.box('mybox');
-  ToDoDataBase db = ToDoDataBase();
-
   @override
   void initState() {
-    // if this is the firest time ever opening the app default data
-    if(_myBox.get("TODOLIST")==null){
-      db.createInitialData();
-    }else{
-      // load data from database
-      db.loadData();
-    }
     super.initState();
-  }
-
-
-  // check box changed
-  void checkBoxChanged(bool? value, int index) {
-    setState(() {
-      db.toDoList[index][1] = !db.toDoList[index][1];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<HomeProvider>(context, listen: false).initializeData();
     });
-    db.updateDataBase();
   }
 
-  void saveNewTask() {
-    setState(() {
-      db.toDoList.add([_controller.text, false]);
-      _controller.clear();
-    });
-    Navigator.of(context).pop();
-    db.updateDataBase();
-  }
-
-  // create new task
   void createNewTask() {
     showDialog(
       context: context,
       builder: (context) {
         return DialogBox(
-          controller: _controller,
-          onSave: saveNewTask,
+          controller:
+              Provider.of<HomeProvider>(context, listen: false).controller,
+          onSave: () {
+            Provider.of<HomeProvider>(context, listen: false).saveNewTask();
+            Navigator.of(context).pop();
+          },
           onCancel: () => Navigator.of(context).pop(),
         );
       },
     );
-  }
-
-  // delete task
-  void deleteTask(int index){
-    setState(() {
-      db.toDoList.removeAt(index);
-    });
-    db.updateDataBase();
   }
 
   @override
@@ -74,25 +42,81 @@ class _HomeState extends State<Home> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
-        title: Text('Todo'),
+        title: const Center(child: Text('Todo')),
+        actions: [
+          InkWell(
+            onTap: () async {},
+            child: const Icon(
+              Icons.picture_as_pdf,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 20),
+        ],
         elevation: 0,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          createNewTask();
-        },
+        onPressed: createNewTask,
         child: const Icon(Icons.add),
       ),
-      body: ListView.builder(
-        itemBuilder: (context, index) {
-          return TodoTile(
-            taskName: db.toDoList[index][0],
-            taskCompleted: db.toDoList[index][1],
-            onChanged: (value) => checkBoxChanged(value, index),
-            deleteFunction:(context) =>deleteTask(index),
-          );
+      body: Consumer<HomeProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return provider.toDoList.isEmpty
+              ? const Center(
+                  child: Text(
+                    "no items",
+                    style: TextStyle(fontSize: 30, color: Colors.grey),
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: provider.toDoList.length,
+                  itemBuilder: (context, index) {
+                    final task = provider.toDoList[index];
+                    return TodoTile(
+                      taskName: task[0],
+                      taskCompleted: task[1],
+                      isPriority: task.length > 2 ? task[2] : false,
+                      onChanged: (val) => provider.checkBoxChanged(val, index),
+                      deleteFunction: (context) => provider.deleteTask(index),
+                      onEdit: () => _showEditDialog(context, index, task[0]),
+                      onPriorityToggle: () => provider.togglePriority(index),
+                    );
+                  },
+                );
         },
-        itemCount: db.toDoList.length,
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context, int index, String currentText) {
+    final TextEditingController editController =
+        TextEditingController(text: currentText);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Task'),
+        content: TextField(
+          controller: editController,
+          decoration: const InputDecoration(hintText: 'Edit your task'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Provider.of<HomeProvider>(context, listen: false)
+                  .editTask(index, editController.text);
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }

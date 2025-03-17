@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:provider/provider.dart';
+import 'package:todo/provider/home_provider.dart';
 
 import 'home.dart';
+
 void main() async {
   await Hive.initFlutter();
   var box = await Hive.openBox('mybox');
@@ -14,12 +17,21 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(statusBarColor: Colors.transparent));
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'ToDo App',
-      home: Home(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => HomeProvider(),
+        )
+      ],
+      child: Builder(
+        builder: (context) {
+          return const MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'ToDo App',
+            home: Home(),
+          );
+        },
+      ),
     );
   }
 }

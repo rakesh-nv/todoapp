@@ -21,12 +21,20 @@ class DialogBox extends StatelessWidget {
           mainAxisSize: MainAxisSize.min, // Makes dialog height dynamic
           children: [
             const SizedBox(height: 5),
-            TextField(
+            TextFormField(
               controller: controller,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 hintText: "Add a new task",
               ),
+              validator: (value) {
+                if (value!.isEmpty) {
+                  const SnackBar(
+                    content: Text("filed Cannot be empty"),
+                    duration: Duration(seconds: 1),
+                  );
+                }
+              },
             ),
             const SizedBox(height: 10),
             Row(
